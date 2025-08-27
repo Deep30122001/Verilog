@@ -1,0 +1,131 @@
+🔹 Concept of Adder-Subtractor
+
+Basic Idea
+
+Addition is straightforward with a ripple-carry or carry-select adder.
+
+Subtraction can be performed using 2’s complement method:
+
+A−B=A+(B‾+1)
+A−B=A+(
+B
++1)
+
+That means we invert all bits of B and add 1 to it (same as Cin = 1).
+
+Control Signal (sub)
+
+We use a control input sub:
+
+sub = 0 → Perform Addition (A + B)
+
+sub = 1 → Perform Subtraction (A - B)
+
+How It Works in Hardware
+
+An XOR gate is applied to every bit of B with sub signal:
+
+If sub = 0, B XOR 0 = B → Normal addition.
+
+If sub = 1, B XOR 1 = ~B → Bitwise inversion of B.
+
+The initial carry-in (Cin) of the adder is set to sub:
+
+Cin = 0 when adding.
+
+Cin = 1 when subtracting (adds the +1 in 2’s complement).
+
+✅ This way, a single circuit does both addition and subtraction.
+
+🔹 32-bit Adder-Subtractor Design
+
+Built from two 16-bit adders (like your diagram).
+
+The lower 16 bits are added first.
+
+The carry is passed into the higher 16-bit adder.
+
+The sub signal controls both the XOR inversion of B and the initial Cin.
+-----------------------------------------------------------------------------------------------------
+BLOCK-DIAGRAM:-
+                 +------------------------------+
+   A[31:0] ----->|                              |
+   B[31:0] --+-->XOR---+------------------------|--> SUM[31:0]
+             |         |                        |
+             |        (B XOR sub)               |
+             |                                  |
+   sub ------+--------> Cin of Adder            |
+                                                |
+         16-bit Adder (Lower)                   |
+   A[15:0] + (B[15:0] XOR sub) + Cin = SUM[15:0]|
+                                                |
+         16-bit Adder (Upper)                   |
+   A[31:16] + (B[31:16] XOR sub) + Cout         |
+                                                |
+                 +------------------------------+
+------------------------------------------------------------------------------------
+CODE:-
+// 1-bit Full Adder
+module full_adder (
+    input a, b, cin,
+    output sum, cout
+);
+    assign {cout, sum} = a + b + cin;
+endmodule
+
+// 16-bit Adder
+module add16 (
+    input  [15:0] a, b,
+    input cin,
+    output [15:0] sum,
+    output cout
+);
+    assign {cout, sum} = a + b + cin;
+endmodule
+
+// 32-bit Adder-Subtractor
+module adder_subtractor_32 (
+    input  [31:0] a, b,
+    input sub,              // 0 = Add, 1 = Sub
+    output [31:0] sum,
+    output cout
+);
+    wire [31:0] b_xor;
+    wire c16;
+
+    // XOR B with sub to invert for subtraction
+    assign b_xor = b ^ {32{sub}};
+
+    // Lower 16 bits
+    add16 lower (
+        .a(a[15:0]),
+        .b(b_xor[15:0]),
+        .cin(sub),
+        .sum(sum[15:0]),
+        .cout(c16)
+    );
+
+    // Upper 16 bits
+    add16 upper (
+        .a(a[31:16]),
+        .b(b_xor[31:16]),
+        .cin(c16),
+        .sum(sum[31:16]),
+        .cout(cout)
+    );
+
+endmodule
+------------------------------------------------------------------------------------
+🔹 Benefits
+
+✅ Single circuit for both Add & Sub → saves hardware.
+✅ Simple design → only requires XOR + adder.
+✅ Fast compared to separate add & subtract units.
+✅ Scalable → can extend to 64-bit or more.
+
+🔹 Demerits
+
+❌ Ripple delay if ripple-carry adder is used (slow for 32-bit).
+❌ More gates (XOR for each bit + adders).
+❌ Carry chain dependency → affects speed.
+❌ Not optimal for very high-speed processors (they prefer Carry Lookahead / Carry Save).
