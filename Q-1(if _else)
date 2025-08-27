@@ -1,0 +1,61 @@
+📌 Question
+
+Write a Verilog module top_module that implements the following behavior:
+
+The computer must shut down if the cpu_overheated signal is high.
+
+Output: shut_off_computer = 1
+
+Otherwise, keep it 0.
+
+The car should keep driving if it has not yet arrived and the gas tank is not empty.
+
+Output: keep_driving = 1
+
+If the car has arrived, or the gas tank is empty, then keep_driving = 0.
+
+Ports:
+
+Inputs:
+
+cpu_overheated (1 = overheated, 0 = normal)
+
+arrived (1 = destination reached, 0 = still traveling)
+
+gas_tank_empty (1 = empty, 0 = fuel available)
+
+Outputs:
+
+shut_off_computer (active high)
+
+keep_driving (active high)
+
+
+Logic in ease
+module top_module (
+    input      cpu_overheated,   // 1 if overheated
+    output reg shut_off_computer,
+    input      arrived,          // 1 if destination reached
+    input      gas_tank_empty,   // 1 if empty
+    output reg keep_driving
+);
+
+    // Shut down computer if overheated
+    always @(*) begin
+        if (cpu_overheated)
+            shut_off_computer = 1'b1;
+        else 
+            shut_off_computer = 1'b0;
+    end
+    
+    // Keep driving if not arrived AND fuel available
+    always @(*) begin
+        if (arrived == 1'b0 && gas_tank_empty == 1'b0)
+            keep_driving = 1'b1;
+        else 
+            keep_driving = 1'b0;
+    end
+
+endmodule
+
+
