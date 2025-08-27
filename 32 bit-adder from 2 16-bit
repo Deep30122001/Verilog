@@ -1,0 +1,61 @@
+# 🔢 Verilog Question – Build a 32-bit Adder from Two 16-bit Adders
+
+## 📌 Question
+You are given a module `add16` that performs a **16-bit addition** with inputs `a`, `b`, and `cin`, and outputs `sum` and `cout`.
+
+👉 Your task:  
+Instantiate **two `add16` modules** to create a **32-bit adder**.  
+
+- The first `add16` computes the **lower 16 bits** of the sum.  
+- The second `add16` computes the **upper 16 bits**, using the **carry-out** of the first adder as its `cin`.  
+
+⚡ Notes:  
+- No need to handle carry-in for the full 32-bit adder (assume `cin = 0`).  
+- Ignore the carry-out of the full 32-bit result.  
+
+---
+
+## 🖼️ Diagram
+
+![32-bit Adder Diagram](images/32bit_adder.png)
+
+*(Make sure to place your image in a folder named `images/` inside your repo.)*  
+
+---
+
+## ✅ Example Solution
+
+```verilog
+module add16 (
+    input  [15:0] a, b,
+    input         cin,
+    output [15:0] sum,
+    output        cout
+);
+    assign {cout, sum} = a + b + cin;
+endmodule
+
+module add32 (
+    input  [31:0] a, b,
+    output [31:0] sum
+);
+    wire carry;
+
+    // Lower 16 bits
+    add16 u1 (
+        .a(a[15:0]),
+        .b(b[15:0]),
+        .cin(1'b0),
+        .sum(sum[15:0]),
+        .cout(carry)
+    );
+
+    // Upper 16 bits
+    add16 u2 (
+        .a(a[31:16]),
+        .b(b[31:16]),
+        .cin(carry),
+        .sum(sum[31:16]),
+        .cout()
+    );
+endmodule
