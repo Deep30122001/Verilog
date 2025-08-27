@@ -1,0 +1,80 @@
+# Logical vs Bitwise Operators in Verilog  
+
+In Verilog, **logical operators** and **bitwise operators** look similar but behave differently.  
+Understanding them is important for writing correct RTL code.  
+
+---
+
+## 🔹 1. Bitwise Operators
+Bitwise operators work on **each bit individually** of a vector.  
+They perform an operation on all bits **in parallel**.  
+
+**Operators:**  
+- `&` (bitwise AND)  
+- `|` (bitwise OR)  
+- `^` (bitwise XOR)  
+- `~` (bitwise NOT)  
+
+### Example:  
+```verilog
+module bitwise_example;
+  reg [3:0] A = 4'b1100;  
+  reg [3:0] B = 4'b1010;  
+  reg [3:0] C;  
+
+  initial begin
+    C = A & B;   // 1100 & 1010 = 1000  
+    $display("A & B = %b", C);  
+
+    C = A | B;   // 1100 | 1010 = 1110  
+    $display("A | B = %b", C);  
+
+    C = A ^ B;   // 1100 ^ 1010 = 0110  
+    $display("A ^ B = %b", C);  
+  end
+endmodule
+outputL:-
+A & B = 1000  
+A | B = 1110  
+A ^ B = 0110  
+2. Logical Operators
+
+Logical operators treat the whole expression as either 1 (true) or 0 (false).
+They are typically used in conditions (if/while).
+
+Operators:
+
+&& (logical AND)
+
+|| (logical OR)
+
+! (logical NOT)
+:-
+module logical_example;
+  reg [3:0] A = 4'b1100;  
+  reg [3:0] B = 4'b0000;  
+  reg result;  
+
+  initial begin
+    result = (A && B);   // A=nonzero => true(1), B=zero => false(0), 1 && 0 = 0  
+    $display("A && B = %b", result);  
+
+    result = (A || B);   // A=nonzero => true(1), B=0 => false(0), 1 || 0 = 1  
+    $display("A || B = %b", result);  
+
+    result = (!B);       // B=0 => false, !0 = 1  
+    $display("!B = %b", result);  
+  end
+endmodule
+output:-
+A && B = 0  
+A || B = 1  
+!B = 1  
+| Aspect      | Bitwise                            | Logical                            |          |   |         |
+| ----------- | ---------------------------------- | ---------------------------------- | -------- | - | ------- |
+| Operates on | Each bit of operands               | Whole value (true/false)           |          |   |         |
+| Operators   | `&`, \`                            | `, `^`, `\~\`                      | `&&`, \` |   | `, `!\` |
+| Example     | `4’b1100 & 4’b1010 = 1000`         | `(4’b1100 && 4’b0000) = 0`         |          |   |         |
+| Usage       | Digital circuits, masks, RTL logic | Conditions, loops, decision making |          |   |         |
+
+
