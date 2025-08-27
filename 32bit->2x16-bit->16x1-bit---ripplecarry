@@ -1,0 +1,237 @@
+a[31:0] ──┬──────────────► a[15:0] ─────────────┐
+          │                                      │
+          └──────────────► a[31:16] ───────┐     │
+b[31:0] ──┬──────────────► b[15:0] ──────┐ │     │
+          │                              │ │     │
+          └──────────────► b[31:16] ──┐  │ │     │
+                                      │  │ │     │
+                cin=0 ───────────────►│  │ │     │
+                                      ▼  ▼ ▼     ▼
+                           ┌───────────────────────┐
+                           │      add16 (LOW)      │
+                           │ a[15:0], b[15:0], cin │
+                           │  → sum[15:0], cout    │
+                           └──────────┬────────────┘
+                                      │ cout
+                                      ▼
+                           ┌───────────────────────┐
+                           │      add16 (HIGH)     │
+                           │ a[31:16], b[31:16],   │
+                           │   cin=cout(low)       │
+                           │  → sum[31:16]         │
+                           └──────────┬────────────┘
+                                      │
+                       ┌──────────────┴───────────────┐
+                       │                              │
+                     sum[15:0]                   sum[31:16]
+                       │                              │
+                       └──────────────► sum[31:0] ◄───┘
+32-bit Ripple Carry Adder
+📌 Overview
+
+This project implements a 32-bit Ripple Carry Adder (RCA) using a hierarchical design approach:
+
+The 32-bit RCA is composed of two 16-bit RCAs.
+
+Each 16-bit RCA is built from sixteen 1-bit Full Adders (FA).
+
+The design follows a modular approach to simplify construction and verification.
+
+🔧 Design Hierarchy
+1. 1-bit Full Adder (FA)
+
+Inputs: a, b, cin
+
+Outputs: sum, cout
+
+Logic:
+
+sum = a ⊕ b ⊕ cin
+
+cout = (a & b) | (b & cin) | (a & cin)
+
+2. 16-bit Ripple Carry Adder (add16)
+
+Built by cascading 16 Full Adders.
+
+Carry-out from FA[i] → Carry-in of FA[i+1].
+
+Inputs: a[15:0], b[15:0], cin
+
+Outputs: sum[15:0], cout
+
+3. 32-bit Ripple Carry Adder (add32)
+
+Composed of two 16-bit adders:
+
+LOW Adder: adds lower 16 bits (a[15:0] + b[15:0] + cin).
+
+HIGH Adder: adds upper 16 bits (a[31:16] + b[31:16] + carry_out_low).
+
+Inputs: a[31:0], b[31:0], cin
+
+Outputs: sum[31:0], cout
+-----------------------------------------------------------------------------
+// 1-bit Full Adder
+module full_adder (
+    input  a,      // First input bit
+    input  b,      // Second input bit
+    input  cin,    // Carry-in
+    output sum,    // Sum output
+    output cout    // Carry-out
+);
+
+    assign sum  = a ^ b ^ cin;              // XOR for sum
+    assign cout = (a & b) | (b & cin) | (a & cin); // Carry logic
+
+endmodule
+
+
+🔎 Explanation:
+
+sum = a ⊕ b ⊕ cin → basic full adder sum equation.
+
+cout = ab + bc + ac → majority logic for carry-out.
+-------------------------------------------------------------------------------
+// 16-bit Ripple Carry Adder
+module add16 (
+    input  [15:0] a,    // First 16-bit input
+    input  [15:0] b,    // Second 16-bit input
+    input        cin,   // Carry-in
+    output [15:0] sum,  // 16-bit sum output
+    output       cout   // Final carry-out
+);
+
+    wire [15:0] c;  // Internal carry wires
+
+    // Instantiate 16 Full Adders
+    genvar i;
+    generate
+        for (i = 0; i < 16; i = i + 1) begin : FA_LOOP
+            if (i == 0) begin
+                // First FA takes external cin
+                full_adder FA (
+                    .a   (a[i]),
+                    .b   (b[i]),
+                    .cin (cin),
+                    .sum (sum[i]),
+                    .cout(c[i])
+                );
+            end else begin
+                // Others take carry from previous FA
+                full_adder FA (
+                    .a   (a[i]),
+                    .b   (b[i]),
+                    .cin (c[i-1]),
+                    .sum (sum[i]),
+                    .cout(c[i])
+                );
+            end
+        end
+    endgenerate
+
+    assign cout = c[15]; // Final carry
+
+endmodule
+
+
+
+🔎 Explanation:
+
+Uses genvar and generate-for loop to instantiate 16 full adders.
+
+Each FA’s cout → next FA’s cin.
+
+First FA gets the external carry-in.
+
+The last FA’s cout → output cout.
+----------------------------------------------------------------------
+// 32-bit Ripple Carry Adder
+module add32 (
+    input  [31:0] a,    // First 32-bit input
+    input  [31:0] b,    // Second 32-bit input
+    input        cin,   // Carry-in
+    output [31:0] sum,  // 32-bit sum output
+    output       cout   // Final carry-out
+);
+
+    wire c16; // Carry between low 16 and high 16 adders
+
+    // Lower 16-bit Adder
+    add16 low_adder (
+        .a   (a[15:0]),
+        .b   (b[15:0]),
+        .cin (cin),
+        .sum (sum[15:0]),
+        .cout(c16)
+    );
+
+    // Higher 16-bit Adder
+    add16 high_adder (
+        .a   (a[31:16]),
+        .b   (b[31:16]),
+        .cin (c16),         // Carry from lower 16 bits
+        .sum (sum[31:16]),
+        .cout(cout)
+    );
+
+endmodule
+
+🔎 Explanation:
+
+Splits the inputs into two halves (16-bit each).
+
+The lower 16-bit adder runs first.
+
+Its cout feeds into the higher 16-bit adder as cin.
+
+Together, they produce the 32-bit sum.
+--------------------------------------------------------------------
+// Testbench for 32-bit Ripple Carry Adder
+module tb_add32;
+
+    reg  [31:0] a, b;
+    reg         cin;
+    wire [31:0] sum;
+    wire        cout;
+
+    // Instantiate 32-bit Adder
+    add32 DUT (
+        .a(a),
+        .b(b),
+        .cin(cin),
+        .sum(sum),
+        .cout(cout)
+    );
+
+    initial begin
+        // Test Case 1
+        a = 32'h00000001; b = 32'h00000001; cin = 0;
+        #10;
+        $display("A=%h, B=%h, CIN=%b => SUM=%h, COUT=%b", a, b, cin, sum, cout);
+
+        // Test Case 2
+        a = 32'hFFFFFFFF; b = 32'h00000001; cin = 0;
+        #10;
+        $display("A=%h, B=%h, CIN=%b => SUM=%h, COUT=%b", a, b, cin, sum, cout);
+
+        // Test Case 3
+        a = 32'h12345678; b = 32'h87654321; cin = 1;
+        #10;
+        $display("A=%h, B=%h, CIN=%b => SUM=%h, COUT=%b", a, b, cin, sum, cout);
+
+        $stop;
+    end
+
+endmodule
+---------------------------------------------------
+✅ Now you have:
+
+1-bit Full Adder
+
+16-bit RCA
+
+32-bit RCA
+
+Testbench with sample outputs
+------------------------------------x-------------------------------------------------
