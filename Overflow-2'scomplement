@@ -1,0 +1,14 @@
+module top_module (
+    input [7:0] a,
+    input [7:0] b,
+    output [7:0] s,
+    output overflow
+); //
+ wire [8:0] temp;  // one extra bit for carry
+
+    assign temp = a + b;      // 9-bit addition
+    assign s = temp[7:0];     // drop the carry out
+    assign overflow = (a[7] & b[7] & ~s[7]) | (~a[7] & ~b[7] & s[7]);
+    // OR equivalently:
+    // assign overflow = temp[8] ^ temp[7];
+endmodule
