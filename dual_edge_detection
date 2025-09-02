@@ -1,0 +1,21 @@
+concept:https://youtu.be/8FgTD1q88_E?si=XBzq_KkB7bBi5y10
+Dualedge triggered flipflop
+---------------------------
+
+    module top_module (
+    input clk,
+    input d,
+    output q
+);
+   
+    reg q1,q2;
+    always @ (posedge clk) begin
+    	q1 <= q2^d; 
+    end
+    
+    always @ (negedge clk) begin
+    	q2 <= q1^d; 
+    end
+    
+    assign q = q1^q2; 
+endmodule
